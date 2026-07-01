@@ -4,7 +4,7 @@ import sqlite3
 from datetime import date
 
 # Conexão com banco de dados
-conn = sqlite3.connect("gestao_beneficiarios.db")
+conn = sqlite3.connect("gestao_beneficiarios.db", check_same_thread=False)
 cursor = conn.cursor()
 
 # Criação das tabelas se não existirem
