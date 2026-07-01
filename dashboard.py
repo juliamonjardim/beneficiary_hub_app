@@ -3,10 +3,11 @@ import pandas as pd
 import sqlite3
 from datetime import date
 
-# Database setup
+# Conexão com banco de dados
 conn = sqlite3.connect("gestao_beneficiarios.db")
 cursor = conn.cursor()
 
+# Criação das tabelas se não existirem
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS beneficiarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,79 +32,84 @@ CREATE TABLE IF NOT EXISTS familias (
 """)
 conn.commit()
 
-# Sidebar navigation
+# Barra lateral de navegação
 st.sidebar.title("Beneficiary Hub")
-page = st.sidebar.radio("Navigate", ["Dashboard", "Beneficiaries", "Families"])
+pagina = st.sidebar.radio("Navegar", ["Dashboard", "Beneficiários", "Famílias"])
 
-# Dashboard
-if page == "Dashboard":
-    st.title("📊 Dashboard Overview")
+# ---------------- Dashboard ----------------
+if pagina == "Dashboard":
+    st.title("📊 Visão Geral")
 
-    # Example metrics
     total_familias = cursor.execute("SELECT COUNT(*) FROM familias").fetchone()[0]
     total_beneficiarios = cursor.execute("SELECT COUNT(*) FROM beneficiarios").fetchone()[0]
-    projetos = ["Education", "Sports", "Culture", "Music", "Social Assistance", "IT", "Crafts"]
-    st.metric("Families Registered", total_familias)
-    st.metric("Total Beneficiaries", total_beneficiarios)
-    st.metric("Active Projects", len(projetos))
-    st.metric("Coordinators", 12)
+    projetos = ["Educação", "Esporte", "Cultura", "Música", "Assistência Social", "Informática", "Artesanato"]
 
-    # Beneficiaries per project
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Famílias cadastradas", total_familias)
+    col2.metric("Beneficiários", total_beneficiarios)
+    col3.metric("Projetos ativos", len(projetos))
+    col4.metric("Coordenadores", 12)
+
+    # Beneficiários por projeto (exemplo fixo)
     df_proj = pd.DataFrame({
-        "Project": projetos,
-        "Beneficiaries": [278, 215, 198, 122, 157, 98, 75]
+        "Projeto": projetos,
+        "Beneficiários": [278, 215, 198, 122, 157, 98, 75]
     })
-    st.bar_chart(df_proj.set_index("Project"))
+    st.bar_chart(df_proj.set_index("Projeto"))
 
-    # Age distribution
-    df_age = pd.DataFrame({
-        "Age Range": ["0-6", "7-12", "13-17", "18-59", "60+"],
-        "Percentage": [18, 28, 19, 25, 10]
+    # Distribuição por idade (exemplo fixo)
+    df_idade = pd.DataFrame({
+        "Faixa Etária": ["0-6", "7-12", "13-17", "18-59", "60+"],
+        "Percentual": [18, 28, 19, 25, 10]
     })
-    st.write("### Age Distribution of Beneficiaries")
-    st.dataframe(df_age)
+    st.write("### Distribuição por Idade")
+    st.dataframe(df_idade)
 
-# Beneficiary registration
-elif page == "Beneficiaries":
-    st.title("🧾 Beneficiary Registration")
+# ---------------- Beneficiários ----------------
+elif pagina == "Beneficiários":
+    st.title("🧾 Cadastro de Beneficiários")
 
-    with st.form("beneficiary_form"):
-        nome = st.text_input("Full Name")
-        data_nasc = st.date_input("Birth Date", date.today())
+    with st.form("form_beneficiario"):
+        nome = st.text_input("Nome completo")
+        data_nasc = st.date_input("Data de nascimento", date.today())
         idade = date.today().year - data_nasc.year
-        familia = st.text_input("Family Name")
-        projeto = st.selectbox("Project", ["Education", "Sports", "Culture", "Music", "Social Assistance", "IT", "Crafts"])
-        situacao = st.selectbox("Status", ["Active", "Inactive"])
-        submitted = st.form_submit_button("Save")
+        familia = st.text_input("Família")
+        projeto = st.selectbox("Projeto", ["Educação", "Esporte", "Cultura", "Música", "Assistência Social", "Informática", "Artesanato"])
+        situacao = st.selectbox("Situação", ["Ativo", "Inativo"])
+        salvar = st.form_submit_button("Salvar")
 
-        if submitted:
-            cursor.execute("INSERT INTO beneficiarios (nome, data_nascimento, idade, familia, projeto, situacao) VALUES (?, ?, ?, ?, ?, ?)",
-                           (nome, str(data_nasc), idade, familia, projeto, situacao))
+        if salvar:
+            cursor.execute("""
+                INSERT INTO beneficiarios (nome, data_nascimento, idade, familia, projeto, situacao)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (nome, str(data_nasc), idade, familia, projeto, situacao))
             conn.commit()
-            st.success("Beneficiary saved successfully!")
+            st.success("✅ Beneficiário cadastrado com sucesso!")
 
-    st.write("### Beneficiary List")
+    st.write("### Lista de Beneficiários")
     df_ben = pd.read_sql_query("SELECT nome, idade, projeto, situacao FROM beneficiarios", conn)
     st.dataframe(df_ben)
 
-# Family management
-elif page == "Families":
-    st.title("🏠 Family Management")
+# ---------------- Famílias ----------------
+elif pagina == "Famílias":
+    st.title("🏠 Gestão de Famílias")
 
-    with st.form("family_form"):
-        nome_fam = st.text_input("Family Name")
-        telefone = st.text_input("Phone")
-        endereco = st.text_input("Address")
-        situacao = st.selectbox("Status", ["Active", "Inactive"])
+    with st.form("form_familia"):
+        nome_fam = st.text_input("Nome da família")
+        telefone = st.text_input("Telefone")
+        endereco = st.text_input("Endereço")
+        situacao = st.selectbox("Situação", ["Ativa", "Inativa"])
         data_cad = date.today().strftime("%d/%m/%Y")
-        submitted = st.form_submit_button("Register Family")
+        salvar = st.form_submit_button("Cadastrar Família")
 
-        if submitted:
-            cursor.execute("INSERT INTO familias (nome, telefone, endereco, situacao, data_cadastro) VALUES (?, ?, ?, ?, ?)",
-                           (nome_fam, telefone, endereco, situacao, data_cad))
+        if salvar:
+            cursor.execute("""
+                INSERT INTO familias (nome, telefone, endereco, situacao, data_cadastro)
+                VALUES (?, ?, ?, ?, ?)
+            """, (nome_fam, telefone, endereco, situacao, data_cad))
             conn.commit()
-            st.success("Family registered successfully!")
+            st.success("✅ Família cadastrada com sucesso!")
 
-    st.write("### Registered Families")
+    st.write("### Famílias Registradas")
     df_fam = pd.read_sql_query("SELECT nome, telefone, endereco, situacao, data_cadastro FROM familias", conn)
     st.dataframe(df_fam)
