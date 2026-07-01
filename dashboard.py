@@ -87,8 +87,11 @@ elif pagina == "Beneficiários":
             st.success("✅ Beneficiário cadastrado com sucesso!")
 
     st.write("### Lista de Beneficiários")
-    df_ben = pd.read_sql_query("SELECT nome, idade, projeto, situacao FROM beneficiarios", conn)
-    st.dataframe(df_ben)
+    try:
+        df_ben = pd.read_sql_query("SELECT nome, idade, projeto, situacao FROM beneficiarios", conn)
+        st.dataframe(df_ben)
+    except Exception:
+        st.warning("⚠️ Nenhum beneficiário cadastrado ainda.")
 
 # ---------------- Famílias ----------------
 elif pagina == "Famílias":
@@ -111,5 +114,8 @@ elif pagina == "Famílias":
             st.success("✅ Família cadastrada com sucesso!")
 
     st.write("### Famílias Registradas")
-    df_fam = pd.read_sql_query("SELECT nome, telefone, endereco, situacao, data_cadastro FROM familias", conn)
-    st.dataframe(df_fam)
+    try:
+        df_fam = pd.read_sql_query("SELECT nome, telefone, endereco, situacao, data_cadastro FROM familias", conn)
+        st.dataframe(df_fam)
+    except Exception:
+        st.warning("⚠️ Nenhuma família cadastrada ainda.")
