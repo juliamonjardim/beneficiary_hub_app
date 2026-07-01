@@ -6,31 +6,7 @@ from datetime import date
 # Conexão com banco de dados
 conn = sqlite3.connect("gestao_beneficiarios.db", check_same_thread=False)
 cursor = conn.cursor()
-
-# Criação das tabelas se não existirem
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS beneficiarios (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT,
-    data_nascimento TEXT,
-    idade INTEGER,
-    familia TEXT,
-    projeto TEXT,
-    situacao TEXT
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS familias (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT,
-    telefone TEXT,
-    endereco TEXT,
-    situacao TEXT,
-    data_cadastro TEXT
-)
-""")
-conn.commit()
+conn.execute("PRAGMA journal_mode=WAL;")  # evita travamentos de escrita/leitura
 
 # Barra lateral de navegação
 st.sidebar.title("Beneficiary Hub")
@@ -73,22 +49,21 @@ elif pagina == "Beneficiários":
         nome = st.text_input("Nome completo")
         data_nasc = st.date_input("Data de nascimento", date.today())
         idade = date.today().year - data_nasc.year
-        familia = st.text_input("Família")
         projeto = st.selectbox("Projeto", ["Educação", "Esporte", "Cultura", "Música", "Assistência Social", "Informática", "Artesanato"])
         situacao = st.selectbox("Situação", ["Ativo", "Inativo"])
         salvar = st.form_submit_button("Salvar")
 
         if salvar:
             cursor.execute("""
-                INSERT INTO beneficiarios (nome, data_nascimento, idade, familia, projeto, situacao)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (nome, str(data_nasc), idade, familia, projeto, situacao))
+                INSERT INTO beneficiarios (nome_completo, data_nascimento, idade, projeto, situacao)
+                VALUES (?, ?, ?, ?, ?)
+            """, (nome, str(data_nasc), idade, projeto, situacao))
             conn.commit()
             st.success("✅ Beneficiário cadastrado com sucesso!")
 
     st.write("### Lista de Beneficiários")
     try:
-        df_ben = pd.read_sql_query("SELECT nome, idade, projeto, situacao FROM beneficiarios", conn)
+        df_ben = pd.read_sql_query("SELECT nome_completo, idade, projeto, situacao FROM beneficiarios", conn)
         st.dataframe(df_ben)
     except Exception:
         st.warning("⚠️ Nenhum beneficiário cadastrado ainda.")
@@ -99,23 +74,27 @@ elif pagina == "Famílias":
 
     with st.form("form_familia"):
         nome_fam = st.text_input("Nome da família")
+        responsavel = st.text_input("Responsável pela família")
         telefone = st.text_input("Telefone")
         endereco = st.text_input("Endereço")
         situacao = st.selectbox("Situação", ["Ativa", "Inativa"])
-        data_cad = date.today().strftime("%d/%m/%Y")
+        data_cad = date.today().strftime("%Y-%m-%d")
         salvar = st.form_submit_button("Cadastrar Família")
 
         if salvar:
             cursor.execute("""
-                INSERT INTO familias (nome, telefone, endereco, situacao, data_cadastro)
-                VALUES (?, ?, ?, ?, ?)
-            """, (nome_fam, telefone, endereco, situacao, data_cad))
+                INSERT INTO familias (nome_familia, responsavel, telefone, endereco, situacao, data_criacao)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (nome_fam, responsavel, telefone, endereco, situacao, data_cad))
             conn.commit()
             st.success("✅ Família cadastrada com sucesso!")
 
     st.write("### Famílias Registradas")
     try:
-        df_fam = pd.read_sql_query("SELECT nome, telefone, endereco, situacao, data_cadastro FROM familias", conn)
+        df_fam = pd.read_sql_query(
+            "SELECT nome_familia, responsavel, telefone, endereco, situacao, data_criacao FROM familias",
+            conn
+        )
         st.dataframe(df_fam)
     except Exception:
         st.warning("⚠️ Nenhuma família cadastrada ainda.")
